@@ -777,23 +777,30 @@ namespace Il2CppDumper
             var dic = new SortedDictionary<int, Il2CppMethodDefinition>();
             for (int i = 0; i < typeDef.vtable_count; i++)
             {
-                var vTableIndex = typeDef.vtableStart + i;
-                var encodedMethodIndex = metadata.vtableMethods[vTableIndex];
-                var usage = Metadata.GetEncodedIndexType(encodedMethodIndex);
-                var index = metadata.GetDecodedMethodIndex(encodedMethodIndex);
-                Il2CppMethodDefinition methodDef;
-                if (usage == 6) //kIl2CppMetadataUsageMethodRef
+                try
                 {
+                    var vTableIndex = typeDef.vtableStart + i;
+                    var encodedMethodIndex = metadata.vtableMethods[vTableIndex];
+                    var usage = Metadata.GetEncodedIndexType(encodedMethodIndex);
+                    var index = metadata.GetDecodedMethodIndex(encodedMethodIndex);
+                    Il2CppMethodDefinition methodDef;
+                    if (usage == 6) //kIl2CppMetadataUsageMethodRef
+                    {
                     var methodSpec = il2Cpp.methodSpecs[index];
                     methodDef = metadata.methodDefs[methodSpec.methodDefinitionIndex];
+                    }
+                    else
+                    {
+                        methodDef = metadata.methodDefs[index];
+                    }
+                    if (methodDef.slot != ushort.MaxValue)
+                    {
+                        dic[methodDef.slot] = methodDef;
+                    }
                 }
-                else
+                catch (System.IndexOutOfRangeException)
                 {
-                    methodDef = metadata.methodDefs[index];
-                }
-                if (methodDef.slot != ushort.MaxValue)
-                {
-                    dic[methodDef.slot] = methodDef;
+                    // Пропускаємо вихід за межі масиву для зламаного обфускатором класу
                 }
             }
             if (dic.Count > 0)
